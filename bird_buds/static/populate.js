@@ -108,7 +108,7 @@ function uri_encode(data)
 function add_image(sci_name,image_url)
 {
     var nodes = d3.selectAll(".node")
-                .filter(function(d,i){return d.className === sci_name })
+                .filter(function(d,i){return d.className === sci_name; });
     nodes.append("image")
         .attr("xlink:href", image_url)
 	    .attr("height", function (d) {
@@ -139,7 +139,7 @@ function get_info(sci_name)
         add_image(sci_name, obj.url);
         return;
     }
-
+    /*jshint multistr: true */
     var url = "http://dbpedia.org/sparql";
     var query = "PREFIX dbpedia2: <http://dbpedia.org/property/>\
                  PREFIX foaf: <http://xmlns.com/foaf/0.1/>\
