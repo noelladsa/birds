@@ -4,6 +4,7 @@ state_polygons = null;
 map = null;
 main_list = [] ;
 var pack = null;
+var w = 600, h = 600;
 
 function color_map(states){
 
@@ -22,26 +23,26 @@ function color_map(states){
 
 function initialize_map()
 {
-    diameter = 960; 
+
     format = d3.format(",d");
     color = d3.scale.category20c();
 
     pack = d3.layout.pack()
-        .size([diameter - 4, diameter - 4])
-        .padding(5);
+        .size([w, h])
+        .sort(null)
+        .padding(1.5);
 
-     svg = d3.select("#bird_circles").append("svg")
-        .attr("viewBox","0 0 960 960")
+    svg = d3.select("#bird_circles").append("svg")
+        .attr("viewBox","0 0 "+w+" "+h)
         .attr("perserveAspectRatio","xMinYMid")       
-        .attr("width", diameter)
-        .attr("height", diameter)
+        .attr("width", w)
+        .attr("height", h )
         .attr("class", "bubble");
  
      var chart = $(".bubble"),
         aspect = chart.width() / chart.height(),
         container = chart.parent();
     $(window).on("resize", function() {
-        console.log("resize called");
         var targetWidth = container.width();
         chart.attr("width", targetWidth);
         chart.attr("height", Math.round(targetWidth / aspect));
@@ -57,8 +58,13 @@ function update_visual(birds)
         d3.selectAll("g.node")
         .remove();
     }
-    var node = svg.selectAll(".node").sort().data(pack.nodes(classes(birds)).filter(
-        function(d) { return !d.children; }))
+
+    data_nodes =  classes(birds);
+
+    var node = svg.selectAll(".node")
+        .sort()
+        .data(pack.nodes(data_nodes)
+        .filter(function(d) { return !d.children; }))
         .enter()
         .append("g")
         .attr("class", "node")
@@ -75,13 +81,11 @@ function update_visual(birds)
         .attr("dy", ".3em")
         .style("text-anchor", "middle")
         .text(function(d) { return main_list[d.className].name.substring(0, d.r / 3); });
-   
+
     for (var key in birds)
         get_info(key);
 
 }
-
-// Returns a flattened hierarchy containing all leaf nodes under the root.
 
 function classes(birds) {
    var data = [];
@@ -107,31 +111,36 @@ function uri_encode(data)
 
 function add_image(sci_name,image_url)
 {
+    var dx = null;
     var nodes = d3.selectAll(".node")
-                .filter(function(d,i){return d.className === sci_name; });
-    nodes.append("image")
+        .filter(function(d,i){return d.className === sci_name; })
+        .append("image")
+        .attr("class",sci_name)
         .attr("xlink:href", image_url)
 	    .attr("height", function (d) {
-            console.log("Height",0.95 * Math.sqrt(2) * d.r);
 			return d.r * 2;
 		})
 		.attr("width", function (d) { 
-            console.log("Width",0.95 * Math.sqrt(2) * d.r);
 			return d.r * 2;
 		})
         // must be transitioned in update but not append because the circles may change in size
         .attr("x", function (d) {
+            dx = d.r + "px";
 			return - d.r + "px";
 		})
 		.attr("y", function (d) {
 			return - d.r + "px";
 		});
+     var css_prop1 = "clip-path: circle("+dx+" at center);";
+     var css_prop2 = "-webkit-clip-path: circle("+dx+" at center);";
+     
+     $("<style>")
+        .html("."+sci_name+" {"+css_prop1+css_prop2+" }")
+        .appendTo("head");
 }
-
 
 function get_info(sci_name)
 {
-    console.log("Calling");
     obj = main_list[sci_name];
     common_name = obj.name ;
     if ("url" in obj) 
@@ -148,7 +157,6 @@ function get_info(sci_name)
                     ?s dbpedia2:name \""+common_name+"\"@en;\
                         foaf:depiction ?o\
                 }";
-    console.log("",query);
 
     var queryUrl = encodeURI( url+"?query="+query+"&format=json" );
      $.ajax({
