@@ -29,7 +29,7 @@ function initialize_map()
 
     pack = d3.layout.pack()
         .size([w, h])
-        .sort(null)
+        .sort(function(a, b) { return -(a.value - b.value);})        
         .padding(1.5);
 
     svg = d3.select("#bird_circles").append("svg")
@@ -39,7 +39,7 @@ function initialize_map()
         .attr("height", h )
         .attr("class", "bubble");
  
-     var chart = $(".bubble"),
+/*     var chart = $(".bubble"),
         aspect = chart.width() / chart.height(),
         container = chart.parent();
     $(window).on("resize", function() {
@@ -47,43 +47,67 @@ function initialize_map()
         chart.attr("width", targetWidth);
         chart.attr("height", Math.round(targetWidth / aspect));
     }).trigger("resize");
-
+*/
     
 }
 
-function update_visual(birds)
+function update_g(g)
 {
-    var nodeStringLenth = d3.selectAll("g.node").toString().length; 
-    if ( nodeStringLenth > 0) {
-        d3.selectAll("g.node")
-        .remove();
-    }
-
-    data_nodes =  classes(birds);
-
-    var node = svg.selectAll(".node")
-        .sort()
-        .data(pack.nodes(data_nodes)
-        .filter(function(d) { return !d.children; }))
-        .enter()
-        .append("g")
-        .attr("class", "node")
+    var duration = 300, delay = 30;
+    g.transition()
+        .attr("transform", function(d) { return "translate(" + w/2 + "," + h/2 + ")"; })
+        .transition()
+        .duration(function (d, i) { return duration;})
+        .delay(function (d, i) { return i * delay; })
         .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
-    node.append("title")
-        .text(function(d) { return d.className ; });
+    //Circle zooming effect each time a new visualization appears
+    g.selectAll("circle")
+        .style("fill", function(d) { return "blue"; })
+        .data(function(d) { return [d]; })
+        .attr("r", 0)
+        .transition()
+        .duration(function (d, i) { return duration;})
+        .delay(function (d, i) { return i * delay; })
+        .attr("r", function (d) {return d.r;});
 
-    node.append("circle")
-        .attr("r", function(d) { return d.r; })
-        .style("fill", function(d) { return color(d.packageName); });
-
-    node.append("text")
+    g.selectAll("text")
         .attr("dy", ".3em")
         .style("text-anchor", "middle")
         .text(function(d) { return main_list[d.className].name.substring(0, d.r / 3); });
 
-    for (var key in birds)
-        get_info(key);
+
+}
+
+function update_visual(birds)
+{
+    data_nodes =  classes(birds);
+
+    var node = svg.selectAll("g")
+        .sort()
+        .data(pack.nodes(data_nodes)
+        .filter(function(d) { return !d.children; }),function(d){return d.className;});
+
+    update_g(node);
+
+    var new_node = node.enter()
+        .append("g")
+        .attr("class", "node");
+
+    new_node.append("title").text(function(d) { return d.className ; });
+    new_node.append("circle");
+    new_node.append("text");
+    update_g(new_node);
+
+    new_node.selectAll("circle")
+       .style("fill", function(d) { return "red"; });
+
+
+    //Remove nodes
+    node.exit().remove();
+
+   // for (var key in main_list)
+     //   get_info(key);
 
 }
 
@@ -174,6 +198,12 @@ function get_info(sci_name)
 }
 
 
+$('#toggleSidebar').on('click', function () {
+    $('#content').toggleClass('col-lg-6 col-lg-1');
+    $('#sidebar').toggleClass('col-lg-6 col-lg-11');
+    map._onResize();
+    $(this).parent().one( 'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function() { map._onResize();});
+});
 
 $(bird_list).change(function(){
     var sci_name = $(this).val();
