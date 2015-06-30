@@ -9,4 +9,3 @@ CREATE TABLE taxonomy(
     GENUS_NAME text,
     SPECIES_NAME text
 );
-
