@@ -11,7 +11,6 @@ class Options(object):
 
 
 def get_sql_results(query, options, param_dict):
-    print query
     with psycopg2.connect(CONN_STRING) as conn:
         if options == Options.PANDAS:
             return pandsql.read_sql(query, conn, params=param_dict)
@@ -65,10 +64,7 @@ def get_other_birds(sci_name, state=None, year=None, options=Options.NORMAL):
 
 
 def get_birdlist(options=Options.NORMAL):
-    query = """select distinct taxonomy.sci_name, replace(primary_com_name,'_',' ')
-    as primary_com_name from taxonomy join (select distinct name from sighting)
-    as d_sighting on d_sighting.name = taxonomy.sci_name
-    """
+    query = """select sci_name, primary_com_name from birds_with_data_v"""
     return get_sql_results(query, options, param_dict=None)
 
 if __name__ == "__main__":
