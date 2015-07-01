@@ -9,3 +9,8 @@ CREATE TABLE taxonomy(
     GENUS_NAME text,
     SPECIES_NAME text
 );
+ALTER TABLE taxonomy ADD IMG_FILE bytea;
+create materialized  view birds_with_data_v  as select distinct taxonomy.sci_name, replace(primary_com_name,'_',' ')
+as primary_com_name from taxonomy join (select distinct name from sighting)
+as d_sighting on d_sighting.name = taxonomy.sci_name;
+
