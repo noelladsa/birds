@@ -1,10 +1,11 @@
 var $ = jQuery.noConflict();
 
-state_polygons = null;
-map = null;
-main_list = [] ;
+var state_polygons = null;
+var map = null;
+var main_list = [] ;
 var pack = null;
 var w = 600, h = 600;
+var duration = 300, delay = 30;
 
 function color_map(states){
 
@@ -39,7 +40,7 @@ function initialize_map()
         .attr("height", h )
         .attr("class", "bubble");
  
-/*     var chart = $(".bubble"),
+     var chart = $(".bubble"),
         aspect = chart.width() / chart.height(),
         container = chart.parent();
     $(window).on("resize", function() {
@@ -47,35 +48,67 @@ function initialize_map()
         chart.attr("width", targetWidth);
         chart.attr("height", Math.round(targetWidth / aspect));
     }).trigger("resize");
-*/
-    
+}
+
+function zoom_in(node_data, i)
+{
+    console.log("Zoom in fired!");
+    circles = svg.selectAll("g")
+                .filter(function(d,i){return d.className === node_data.className; })
+                .selectAll("circle");
+
+    svg.selectAll("g")
+        .sort(function(node_data_a, node_data_b){
+            if (node_data_a.className != node_data.className)
+                return -1;
+            return 1;
+          }
+        );
+    //How do I use 'this' in place of circles, since the correct circle element
+    //has triggered this event
+    circles.attr("r", function(d){return d.r;})
+        .transition()
+        .attr("r", "200");
+}
+
+function zoom_out(d, i)
+{
+    console.log("Zoom out fired!");
+    console.log(d);
+    sci_name = d.className;
+    circles = svg.selectAll("g")
+                .filter(function(d,i){
+                    return d.className === sci_name; })
+                .selectAll("circle");
+    circles.attr("r", function(d){return d.r;})
+        .transition()
+        .attr("r",function(d){return d.r;}); 
 }
 
 function update_g(g)
 {
-    var duration = 300, delay = 30;
-    g.transition()
-        .attr("transform", function(d) { return "translate(" + w/2 + "," + h/2 + ")"; })
-        .transition()
-        .duration(function (d, i) { return duration;})
-        .delay(function (d, i) { return i * delay; })
-        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-
-    //Circle zooming effect each time a new visualization appears
+   //Circle zooming effect each time a new visualization appears
     g.selectAll("circle")
-        .style("fill", function(d) { return "blue"; })
+        .style("stroke", function(d) { return "black"; })
+        .style("fill", function(d) { return "red"; })
         .data(function(d) { return [d]; })
         .attr("r", 0)
         .transition()
         .duration(function (d, i) { return duration;})
         .delay(function (d, i) { return i * delay; })
-        .attr("r", function (d) {return d.r;});
+        .attr("r", function (d) {return d.r;})
+        .attr("rInit", function(d, i) { return d.r; })
+        .attr("x", function(d, i) { return d.x; })
+        .attr("y", function(d, i) { return d.y; });
 
+    //Adding zooming events to circles
+
+/*
     g.selectAll("text")
         .attr("dy", ".3em")
         .style("text-anchor", "middle")
         .text(function(d) { return main_list[d.className].name.substring(0, d.r / 3); });
-
+*/
 
 }
 
@@ -88,21 +121,24 @@ function update_visual(birds)
         .data(pack.nodes(data_nodes)
         .filter(function(d) { return !d.children; }),function(d){return d.className;});
 
+    node.transition()
+        .duration(function (d, i) { return duration;})
+        .delay(function (d, i) { return i * delay; })
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
     update_g(node);
 
     var new_node = node.enter()
         .append("g")
-        .attr("class", "node");
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+        .attr("class", "node")
+        .on('mouseover', zoom_in) 
+        .on('mouseout', zoom_out);
 
     new_node.append("title").text(function(d) { return d.className ; });
     new_node.append("circle");
     new_node.append("text");
     update_g(new_node);
-
-    new_node.selectAll("circle")
-       .style("fill", function(d) { return "red"; });
-
-
     //Remove nodes
     node.exit().remove();
 
@@ -136,7 +172,7 @@ function uri_encode(data)
 function add_image(sci_name,image_url)
 {
     var dx = null;
-    var nodes = d3.selectAll(".node")
+    var nodes = d3.selectAll("g")
         .filter(function(d,i){return d.className === sci_name; })
         .append("image")
         .attr("class",sci_name)
