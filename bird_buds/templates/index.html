@@ -1,36 +1,13 @@
 <!DOCTYPE html>
 <html>
 	<head>
+        <meta http-equiv="cache-control" content="no-cache" />
 		<title>Bird Visualizations</title>
         <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
         <link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.css' rel='stylesheet' />
         <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-       html, body, 
-       #main-container, 
-       #main-container .row-fluid, 
-       #main-container .row-fluid #sidebar
-       { 
-          height:100%
-       }
-        #choices {height:30px; width:100%;}
-        #map {height:90%; width:100%;}
-       
-        text 
-        {
-          font: 10px sans-serif;
-        }
-        .input-append .btn.dropdown-toggle{
-            float: none;
-        }
+        <link href="static/birds.css" rel="stylesheet">
 
-        .row-fluid div {
-            -webkit-transition: width 0.3s ease, margin 0.3s ease;
-            -moz-transition: width 0.3s ease, margin 0.3s ease;
-            -o-transition: width 0.3s ease, margin 0.3s ease;
-            transition: width 0.3s ease, margin 0.3s ease;
-        }
-    </style>
 	</head>
 <body>
     <nav class="navbar navbar-inverse navbar-static-top">
