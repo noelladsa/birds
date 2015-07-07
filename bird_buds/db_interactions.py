@@ -64,9 +64,9 @@ def get_other_birds(sci_name, state=None, year=None, options=Options.NORMAL):
 
 
 def get_birdlist(options=Options.NORMAL):
-    query = """select sci_name, primary_com_name from birds_with_data_v"""
+    query = """select sci_name, primary_com_name, img_file from birds_with_data_v"""
     return get_sql_results(query, options, param_dict=None)
 
 if __name__ == "__main__":
     CONN_STRING = "dbname=birddb user=recursework"
-    print get_sightings("Turdus_migratorius")
+    print get_birdlist()
