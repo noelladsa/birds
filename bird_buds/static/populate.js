@@ -30,7 +30,6 @@ function doSVGResize(){
 }
 
 
-
 function zoomIn(nodeData, i, svg)
 {
     //How do I use 'this' in place of circles, since the correct circle element
@@ -67,7 +66,7 @@ function zoomOut(nodeData, i, svg)
                 .attr("transform", null);
 }
 
-function updateGNode(g , svg)
+function updateGNode(g , svg, masterBirdList)
 {
     g.selectAll("g")
         .attr("orig_x", function(d, i) { return d.x; })
@@ -75,7 +74,7 @@ function updateGNode(g , svg)
    //Circle zooming effect each time a new visualization appears
     g.selectAll("circle")
         .style("stroke", function(d) { return "black"; })
-        .style("fill", function(d) { return "red"; })
+        .style("fill", function(d) { return "white"; })
         .data(function(d) { return [d]; })
         .attr("r", 0)
         .transition()
@@ -85,29 +84,30 @@ function updateGNode(g , svg)
         .attr("rInit", function(d, i) { return d.r; });
     //Adding zooming events to circles
 
-/*
     g.selectAll("text")
         .attr("dy", ".3em")
         .style("text-anchor", "middle")
-        .text(function(d) { return birdList[d.className].name.substring(0, d.r / 3); });
-*/
+        .text(function(d) { return masterBirdList[d.className].common_name.substring(0, d.r / 3); });
 
+
+       
 }
 
-function updateBirdVisual(birds, svg, pack)
+function updateBirdVisual(birdProb,masterBirdList,svg, pack)
 {
-    gNodeData =  convertBirdPredictions(birds);
+    $("style").remove();
+    gNodeData =  convertBirdPredictions(birdProb);
     var gNode = svg.selectAll("g")
         .sort()
         .data(pack.nodes(gNodeData)
         .filter(function(d) { return !d.children; }),function(d){return d.className;});
 
     gNode.transition()
-        .duration(function (d, i) { return duration;})
-        .delay(function (d, i) { return i * delay; })
+        .duration(function (d, i) { return 300;})
+        .delay(function (d, i) { return i * 30; })
         .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
-    updateGNode(gNode, svg);
+    updateGNode(gNode, svg, masterBirdList);
 
     var newGNode = gNode.enter()
         .append("g")
@@ -116,24 +116,67 @@ function updateBirdVisual(birds, svg, pack)
         .on('mouseover', function(d, i){ zoomIn(d, i, svg); })
         .on('mouseout', function(d, i){ zoomOut(d, i, svg);});
 
-    newGNode.append("title").text(function(d) { return d.className ; });
-    newGNode.append("circle");
     newGNode.append("text");
-    updateGNode(newGNode, svg);
+    newGNode.append("title").text(function(d) {
+        return masterBirdList[d.className].common_name; });
+    newGNode.append("circle");
+    updateGNode(newGNode, svg, masterBirdList);
+    for (var key in birdProb)
+        add_image(key,masterBirdList,svg);
     //Remove gNodes
     gNode.exit().remove();
 
-   // for (var key in birdList)
-     //   get_info(key);
 
+}
+
+
+
+function add_image(sci_name,masterBirdList,svg)
+{
+    var image_url = masterBirdList[sci_name].image_url;
+
+    var dx = null;
+    var nodes = svg.selectAll("g")
+        .filter(function(d,i){return d.className === sci_name; })
+        .append("image")
+        .attr("class",sci_name)
+        .attr("xlink:href", image_url)
+	    .attr("height", function (d) {
+			return d.r * 3;
+		})
+		.attr("width", function (d) { 
+			return d.r * 3;
+		})
+        // must be transitioned in update but not append because the circles may change in size
+        .attr("x", function (d) {
+            dx = d.r + "px";
+			return - (d.r * 1.5) + "px";
+		})
+		.attr("y", function (d) {
+			return - (d.r * 1.5) + "px";
+		});
+     var css_prop1 = "clip-path: circle("+dx+" at center);";
+     var hover = ":hover {\
+                    -webkit-transform:scale(3.25); /* Safari and Chrome */\
+                    -webkit-transition-duration: 500ms;\
+                    -webkit-transition-timing-function: ease-out;\
+                    -moz-transform:scale(3.25); /* Firefox */\
+                    -ms-transform:scale(3.25); /* IE 9 */\
+                    -o-transform:scale(3.25); /* Opera */\
+                    transform:scale(3.25);\
+                    transition: all .2s ease-in-out\
+                    }";
+
+     var css_prop2 = "-webkit-clip-path: circle("+dx+" at center);";
+     $("<style>")
+        .html("."+sci_name+" {"+css_prop1+css_prop2+" } "+"."+sci_name+hover)
+        .appendTo("head");
 }
 
 function convertBirdPredictions(birds) {
    var data = [];
     for (var key in birds)
-    {
         data.push({packageName:"Flare", className:key, value:birds[key]});
-    }
     return {children: data};
 }
 
@@ -150,35 +193,7 @@ function encodeParams(data)
 }
 
 
-function add_image(sci_name,image_url)
-{
-    var dx = null;
-    var nodes = d3.selectAll("g")
-        .filter(function(d,i){return d.className === sci_name; })
-        .append("image")
-        .attr("class",sci_name)
-        .attr("xlink:href", image_url)
-	    .attr("height", function (d) {
-			return d.r * 2;
-		})
-		.attr("width", function (d) { 
-			return d.r * 2;
-		})
-        // must be transitioned in update but not append because the circles may change in size
-        .attr("x", function (d) {
-            dx = d.r + "px";
-			return - d.r + "px";
-		})
-		.attr("y", function (d) {
-			return - d.r + "px";
-		});
-     var css_prop1 = "clip-path: circle("+dx+" at center);";
-     var css_prop2 = "-webkit-clip-path: circle("+dx+" at center);";
-     
-     $("<style>")
-        .html("."+sci_name+" {"+css_prop1+css_prop2+" }")
-        .appendTo("head");
-}
+
 
 function get_info(sci_name)
 {
@@ -215,14 +230,6 @@ function get_info(sci_name)
 }
 
 
-$('#toggleSidebar').on('click', function () {
-    $('#content').toggleClass('col-lg-6 col-lg-1');
-    $('#sidebar').toggleClass('col-lg-6 col-lg-11');
-    map._onResize();
-    $(this).parent().one( 'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', 
-                         function() { map._onResize();});
-});
-
 
 function style(feature) {
     return {
@@ -248,6 +255,7 @@ function getColor(d) {
 
 
 function colourStates(states, map, statePolygons){
+    console.log(states);
     for ( var i=0; i < statePolygons.features.length; i++){
         checkState = statePolygons.features[i].properties.name;
         value = 0;
@@ -259,15 +267,21 @@ function colourStates(states, map, statePolygons){
         L.geoJson(statePolygons, {style:style}).addTo(map);
 }
 
-function setupEventBindings(map, polygons, svg, pack) {
+function setupEventBindings(map, polygons, svg, pack, masterBirdList) {
     $("#bird_list").change(function(element) {
         var sci_name = $(this).val();
-        displayBird(sci_name, map, polygons, svg, pack);
+        displayBird(sci_name, map, polygons, svg, pack,masterBirdList);
      });
+    $('#toggleSidebar').on('click', function () {
+        $('#content').toggleClass('col-lg-6 col-lg-1');
+        $('#sidebar').toggleClass('col-lg-6 col-lg-11');
+        map._onResize();
+         $(this).parent().one( 'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function() { map._onResize();});
+});
 }
 
 
-function displayBird(sci_name, map, polygons, svg, pack) {
+function displayBird(sci_name, map, polygons, svg, pack, masterBirdList) {
       $.ajax({
         url: "birds/"+sci_name,
         cache: false,
@@ -275,7 +289,7 @@ function displayBird(sci_name, map, polygons, svg, pack) {
         {
             var aggreg = JSON.parse(data);
             colourStates(aggreg.states, map, polygons);
-            updateBirdVisual(aggreg.birds, svg, pack);
+            updateBirdVisual(aggreg.birds,masterBirdList, svg, pack);
         }
     });
 }
@@ -286,6 +300,15 @@ function populateBirdList (birdData){
          birdEntry.primary_com_name+"</option>";
          $(selectBird).appendTo("#bird_list");
     });
+
+    var selectlist = $("#bird_list");
+
+    selectlist.sort(function(a,b) {
+        if (a.text > b.text) return 1;
+        else if (a.text < b.text) return -1;
+        else return 0;
+    });
+    $('#bird_list').html(selectlist);
  }
 
 function loadMapBackground(){
@@ -339,6 +362,20 @@ function loadPrerequisites(onLoaded) {
     addTask("birds", loadBirdList);
     addTask("polygons", loadPolygons);
 }
+function convertToDict(masterBirdList)
+{
+    var birdKeys= Array();
+    $.each(masterBirdList, function (i,birdEntry){
+         var selectBird="<option value="+birdEntry.sci_name+">"+
+         birdEntry.primary_com_name+"</option>";
+         $(selectBird).appendTo("#bird_list");
+         var entry = Array();
+         entry.common_name = birdEntry.primary_com_name;
+         entry.image_url = birdEntry.img_file;
+         birdKeys[birdEntry.sci_name] = entry;
+    });
+    return birdKeys;
+}
 
 $(function(){
     loadPrerequisites(function(results){
@@ -353,6 +390,8 @@ $(function(){
 
         doSVGResize();
         populateBirdList(birdData);
-        setupEventBindings(map, statePolygons ,svg ,pack);
+        var masterBirdList = convertToDict(birdData);
+        console.log(masterBirdList);
+        setupEventBindings(map, statePolygons ,svg ,pack, masterBirdList);
     });
 });
